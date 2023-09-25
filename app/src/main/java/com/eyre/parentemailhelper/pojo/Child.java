@@ -1,9 +1,13 @@
 package com.eyre.parentemailhelper.pojo;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Child {
 
     private String name;
-    private int ID;
+    private String ID;
+    private List<CalenderEvent> calenderEvents = new ArrayList<>();
 
     public String getName() {
         return name;
@@ -13,11 +17,19 @@ public class Child {
         this.name = name;
     }
 
-    public int getID() {
+    public String getID() {
         return ID;
     }
 
-    public void setID(int ID) {
+    public void setID(String ID) {
         this.ID = ID;
+    }
+
+    public List<CalenderEvent> getCalenderEvents() {
+        return calenderEvents;
+    }
+
+    public void addCalenderEvents(CalenderEvent calenderEvent) {
+        calenderEvents.add(calenderEvent);
     }
 }

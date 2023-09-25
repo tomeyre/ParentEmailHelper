@@ -2,14 +2,13 @@ package com.eyre.parentemailhelper.activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.content.Intent;
 import android.widget.Button;
 import android.widget.EditText;
 
 import com.eyre.parentemailhelper.R;
-import com.eyre.parentemailhelper.listener.LoginTapestry;
+import com.eyre.parentemailhelper.listener.LoginTapestryListener;
 
-public class Credentials extends AppCompatActivity {
+public class CredentialsCheckingActivity extends AppCompatActivity {
 
     Button loginTapestryButton;
     EditText username;
@@ -24,6 +23,14 @@ public class Credentials extends AppCompatActivity {
         username = findViewById(R.id.username);
         password = findViewById(R.id.password);
 
-        loginTapestryButton.setOnClickListener(new LoginTapestry(this, username.getText().toString(), password.getText().toString()));
+        loginTapestryButton.setOnClickListener(new LoginTapestryListener(this));
+    }
+
+    public String getUsername(){
+        return username.getText().toString().trim();
+    }
+
+    public String getPassword(){
+        return password.getText().toString().trim();
     }
 }

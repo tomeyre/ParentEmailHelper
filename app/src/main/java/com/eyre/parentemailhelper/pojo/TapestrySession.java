@@ -1,16 +1,17 @@
 package com.eyre.parentemailhelper.pojo;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class TapestryConnectionDetails {
+public class TapestrySession {
 
-    private static TapestryConnectionDetails INSTANCE;
-    private TapestryConnectionDetails() {
+    private static TapestrySession INSTANCE;
+    private TapestrySession() {
     }
 
-    public static TapestryConnectionDetails getInstance() {
+    public static TapestrySession getInstance() {
         if(INSTANCE == null) {
-            INSTANCE = new TapestryConnectionDetails();
+            INSTANCE = new TapestrySession();
         }
 
         return INSTANCE;
@@ -18,7 +19,7 @@ public class TapestryConnectionDetails {
 
     private String cookie;
     private String referer;
-    private List<Child> children;
+    private List<Child> children = new ArrayList<>();
 
     public String getCookie() {
         return cookie;
@@ -40,7 +41,7 @@ public class TapestryConnectionDetails {
         return children;
     }
 
-    public void setChildren(List<Child> children) {
-        this.children = children;
+    public void addChildren(Child child) {
+        children.add(child);
     }
 }
