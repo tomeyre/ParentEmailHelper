@@ -15,6 +15,7 @@ public class TapestryEventsListener implements View.OnClickListener {
 
     @Override
     public void onClick(View arg0) {
+//        getCalendarId(context, TAPESTRY);
         new LookForNewTapestryEventsBackgroundService().getNewTapestryEvents(context);
     }
 }

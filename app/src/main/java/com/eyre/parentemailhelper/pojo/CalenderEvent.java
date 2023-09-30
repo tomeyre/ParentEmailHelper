@@ -1,11 +1,14 @@
 package com.eyre.parentemailhelper.pojo;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 public class CalenderEvent {
 
     private String url;
     private String content;
-    private String datePlanned;
-    private String dateApproved;
+    private LocalDate datePlanned;
+    private LocalDateTime dateApproved;
 
     public String getUrl() {
         return url;
@@ -23,19 +26,19 @@ public class CalenderEvent {
         this.content = content;
     }
 
-    public String getDatePlanned() {
+    public LocalDate getDatePlanned() {
         return datePlanned;
     }
 
-    public void setDatePlanned(String datePlanned) {
+    public void setDatePlanned(LocalDate datePlanned) {
         this.datePlanned = datePlanned;
     }
 
-    public String getDateApproved() {
+    public LocalDateTime getDateApproved() {
         return dateApproved;
     }
 
-    public void setDateApproved(String dateApproved) {
+    public void setDateApproved(LocalDateTime dateApproved) {
         this.dateApproved = dateApproved;
     }
 }

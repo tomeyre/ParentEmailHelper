@@ -11,6 +11,7 @@ import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.eyre.parentemailhelper.R;
+import com.eyre.parentemailhelper.listener.TapestryDeleteCalendarListener;
 import com.eyre.parentemailhelper.listener.TapestryEventsListener;
 import com.eyre.parentemailhelper.listener.CheckCredentialsTapestryListener;
 
@@ -18,8 +19,10 @@ public class MainActivity extends AppCompatActivity {
 
     Button provideLoginCredentials;
     Button checkTapestryForNewEvents;
+    Button deleteTapestryCalendar;
     CheckCredentialsTapestryListener checkCredentialsTapestryListener;
     TapestryEventsListener tapestryEventsListener;
+    TapestryDeleteCalendarListener tapestryDeleteCalendarListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,12 +31,15 @@ public class MainActivity extends AppCompatActivity {
 
         checkCredentialsTapestryListener = new CheckCredentialsTapestryListener(this);
         tapestryEventsListener = new TapestryEventsListener(this);
+        tapestryDeleteCalendarListener = new TapestryDeleteCalendarListener(this);
 
         provideLoginCredentials = findViewById(R.id.provideLoginCredentials);
         checkTapestryForNewEvents = findViewById(R.id.checkTapestryForNewEvents);
+        deleteTapestryCalendar = findViewById(R.id.deleteTapestryCalendar);
 
         provideLoginCredentials.setOnClickListener(checkCredentialsTapestryListener);
         checkTapestryForNewEvents.setOnClickListener(tapestryEventsListener);
+        deleteTapestryCalendar.setOnClickListener(tapestryDeleteCalendarListener);
     }
 
     @Override
@@ -43,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         if (!creds.isEmpty()) {
             provideLoginCredentials.setText("Change Tapestry Login Details");
             checkTapestryForNewEvents.setVisibility(View.VISIBLE);
+            deleteTapestryCalendar.setVisibility(View.VISIBLE);
         }
     }
 

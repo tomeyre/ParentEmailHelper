@@ -64,8 +64,8 @@ public class Request {
             restConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36");
             restConnection.setUseCaches(false);
             restConnection.setAllowUserInteraction(false);
-            restConnection.setConnectTimeout(10000);
-            restConnection.setReadTimeout(10000);
+            restConnection.setConnectTimeout(300000);
+            restConnection.setReadTimeout(300000);
             restConnection.connect();
             int status = restConnection.getResponseCode();
 
