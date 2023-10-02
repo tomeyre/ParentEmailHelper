@@ -4,62 +4,94 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/white"
     tools:context=".activity.MainActivity">
 
     <TextView
         android:id="@+id/title"
-        android:textSize="22sp"
-        android:layout_margin="20dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_margin="20dp"
         android:text="Welcome to parent email helper"
+        android:textColor="@color/black"
+        android:textSize="22sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
 
-
     <TextView
-        android:textAlignment="center"
-        android:textSize="12sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginTop="50dp"
         android:paddingLeft="20dp"
         android:paddingRight="20dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:text="This application is designed to help you manage the insane amount of information a school will throw at you from 2 different sources.\n\nPlease click which type of account you want to link first."
-        app:layout_constraintStart_toStartOf="@id/title"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="@id/title"
-        app:layout_constraintTop_toBottomOf="@id/title"/>
+        app:layout_constraintStart_toStartOf="@id/title"
+        app:layout_constraintTop_toBottomOf="@id/title" />
 
     <Button
         android:id="@+id/provideLoginCredentials"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:text="Tapestry"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:visibility="invisible"
         android:id="@+id/checkTapestryForNewEvents"
-        android:text="Check Tapestry Events"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="Check Tapestry Events"
+        android:textColor="@color/white"
+        android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/provideLoginCredentials"/>
+        app:layout_constraintTop_toBottomOf="@+id/provideLoginCredentials" />
 
     <Button
-        android:visibility="invisible"
         android:id="@+id/deleteTapestryCalendar"
-        android:text="Delete Tapestry Calendar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="Delete Tapestry Calendar"
+        android:textColor="@color/white"
+        android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/checkTapestryForNewEvents"/>
+        app:layout_constraintTop_toBottomOf="@+id/checkTapestryForNewEvents" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="10dp"
+        android:layout_margin="20dp"
+        android:max="50"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/deleteTapestryCalendar" />
+
+    <TextView
+        android:id="@+id/progressBarText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:text="TextView"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        android:textSize="12sp"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/progressBar" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

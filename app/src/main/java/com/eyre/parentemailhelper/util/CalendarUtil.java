@@ -15,6 +15,8 @@ import android.provider.CalendarContract;
 
 import androidx.annotation.ColorInt;
 
+import com.eyre.parentemailhelper.pojo.CalenderEvent;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -140,22 +142,21 @@ public class CalendarUtil {
 //        }
 //    }
 
-    public static long addEventToCalendar(Context context, String title,
-                                          String addInfo, LocalDate startDate,
+    public static long addEventToCalendar(Context context, CalenderEvent calenderEvent,
                                           boolean isRemind, boolean isMailService) {
         ContentResolver cr = context.getContentResolver();
         String eventUriStr = "content://com.android.calendar/events";
         ContentValues event = new ContentValues();
 
         event.put(CalendarContract.Events.CALENDAR_ID, getCalendarId(context, TAPESTRY));
-        event.put(CalendarContract.Events.TITLE, title);
-        event.put(CalendarContract.Events.DESCRIPTION, addInfo);
+        event.put(CalendarContract.Events.TITLE, calenderEvent.getChildName() + "\nFrom: " + calenderEvent.getApprovedBy() + "\n" + calenderEvent.getTitle().trim());
+        event.put(CalendarContract.Events.DESCRIPTION, calenderEvent.getContent() + " Go here to find out more: " + calenderEvent.getUrl());
         event.put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
 
         Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.YEAR, startDate.getYear());
-        calendar.set(Calendar.MONTH, startDate.getMonthValue() - 1);
-        calendar.set(Calendar.DAY_OF_MONTH, startDate.getDayOfMonth());
+        calendar.set(Calendar.YEAR, calenderEvent.getDatePlanned().getYear());
+        calendar.set(Calendar.MONTH, calenderEvent.getDatePlanned().getMonthValue() - 1);
+        calendar.set(Calendar.DAY_OF_MONTH, calenderEvent.getDatePlanned().getDayOfMonth());
         calendar.set(Calendar.HOUR_OF_DAY, 8);
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
@@ -170,7 +171,7 @@ public class CalendarUtil {
         if (isRemind) {
             int method = 1;
             int lastReminder = 40;
-            int firstReminder = 1320;
+            int firstReminder = 14*60;
             addAlarms(cr, eventID, lastReminder, method);
             addAlarms(cr, eventID, firstReminder, method);
             //        String reminderUriString = "content://com.android.calendar/reminders";

@@ -8,6 +8,7 @@ import static com.eyre.parentemailhelper.util.InternalStorage.write;
 
 import android.content.Context;
 
+import com.eyre.parentemailhelper.activity.CredentialsCheckingActivity;
 import com.eyre.parentemailhelper.pojo.TapestryLoginCredentials;
 import com.eyre.parentemailhelper.util.Request;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -68,6 +69,8 @@ public class CheckTapestryCredentialsAreValidBackgroundService {
                          try {
                              ObjectMapper objectMapper = new ObjectMapper();
                              write(context, TAPESTRY_CREDENTIALS, objectMapper.writeValueAsString(tapestryLoginCredentials), TAPESTRY);
+                             displayLong("Logged in successfully", context);
+                             ((CredentialsCheckingActivity)context).finish();
                          }catch (Exception e){
                              e.printStackTrace();
                          }

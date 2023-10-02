@@ -14,6 +14,12 @@ import static com.eyre.parentemailhelper.util.InternalStorage.write;
 import static com.eyre.parentemailhelper.util.Permissions.checkAndRequestPermissions;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.View;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.eyre.parentemailhelper.pojo.CalenderEvent;
 import com.eyre.parentemailhelper.pojo.Child;
@@ -24,6 +30,7 @@ import com.eyre.parentemailhelper.util.DateUtil;
 import com.eyre.parentemailhelper.util.DisplayMessage;
 import com.eyre.parentemailhelper.util.Request;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.ArrayType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -59,108 +66,231 @@ public class LookForNewTapestryEventsBackgroundService {
     TapestrySession tapestrySession = TapestrySession.getInstance();
 
     private String error = "";
+    private int progress = 0;
 
-    public void getNewTapestryEvents(Context context) {
+    private Context context;
+    private ProgressBar progressBar;
+    private TextView progressBarText;
 
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                if (tapestrySession.getCookie() == null) {
-                    //get initial cookie
-                    String json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/");
 
-                    // get _token using jsoup
-                    Document doc = Jsoup.parse(json);
+    public void getNewTapestryEvents(Context context, ProgressBar progressBar, TextView progressBarText) {
+        this.context = context;
+        this.progressBar = progressBar;
+        this.progressBarText = progressBarText;
+        executor.execute(fullCheck);
+    }
 
-                    String token = "";
-                    for (Element element : doc.getElementsByTag("input")) {
-                        if (element.attr("name").equals("_token")) {
-                            token = element.attr("value");
-                        }
+    private Runnable fullCheck = new Runnable() {
+        @Override
+        public void run() {
+            setVisibility(progressBar, progressBarText, View.VISIBLE);
+            if (tapestrySession.getCookie() == null) {
+                //get initial cookie
+                String json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/");
+                setProgress(progressBar);
+                setProgressText(progressBarText, "Logging in...");
+
+                // get _token using jsoup
+                Document doc = Jsoup.parse(json);
+
+                String token = "";
+                for (Element element : doc.getElementsByTag("input")) {
+                    if (element.attr("name").equals("_token")) {
+                        token = element.attr("value");
                     }
+                }
 
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    String creds = read(context, TAPESTRY_CREDENTIALS, TAPESTRY);
-                    String tapestryChecked = read(context, TAPESTRY_CHECKED, TAPESTRY);
-                    TapestryLoginCredentials tapestryLoginCredentials = new TapestryLoginCredentials();
-                    List<String> urls = new ArrayList<>();
-                    try {
-                        if(!creds.isEmpty()) {
-                            tapestryLoginCredentials = objectMapper.readValue(creds, TapestryLoginCredentials.class);
-                        }
-                        if(!tapestryChecked.isEmpty()){
-                            urls = objectMapper.readValue(tapestryChecked, TypeFactory.defaultInstance().constructCollectionType(List.class, String.class));
-                        }
-                    } catch (JsonProcessingException e) {
-                        throw new RuntimeException(e);
+                ObjectMapper objectMapper = new ObjectMapper();
+                String creds = read(context, TAPESTRY_CREDENTIALS, TAPESTRY);
+                String tapestryChecked = read(context, TAPESTRY_CHECKED, TAPESTRY);
+                TapestryLoginCredentials tapestryLoginCredentials = new TapestryLoginCredentials();
+                List<String> urls = new ArrayList<>();
+                try {
+                    if (!creds.isEmpty()) {
+                        tapestryLoginCredentials = objectMapper.readValue(creds, TapestryLoginCredentials.class);
                     }
-                    HashMap<String, String> params = new HashMap<>();
-                    params.put("email", tapestryLoginCredentials.getUsername());
-                    params.put("password", tapestryLoginCredentials.getPassword());
-                    params.put("login_redirect_url", "");
-                    params.put("login_redirect_school", "");
-                    params.put("oauth", "");
-                    params.put("oauth_login_url", "");
-                    params.put("_token", token);
-                    //login
-                    json = new Request().getJSONFromUrlUsingPost(TAPESTRY_BASE_PATH + "/login", params);
+                    if (!tapestryChecked.isEmpty()) {
+                        urls = objectMapper.readValue(tapestryChecked, TypeFactory.defaultInstance().constructCollectionType(List.class, String.class));
+                    }
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                HashMap<String, String> params = new HashMap<>();
+                params.put("email", tapestryLoginCredentials.getUsername());
+                params.put("password", tapestryLoginCredentials.getPassword());
+                params.put("login_redirect_url", "");
+                params.put("login_redirect_school", "");
+                params.put("oauth", "");
+                params.put("oauth_login_url", "");
+                params.put("_token", token);
+                //login
+                json = new Request().getJSONFromUrlUsingPost(TAPESTRY_BASE_PATH + "/login", params);
+                doc = Jsoup.parse(json);
+                if (doc.getElementsByClass("alert-danger").size() > 0) {
+                    displayErrors(doc, context);
+                } else {
+                    new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations");
+                    displayErrors(doc, context);
+                    setProgress(progressBar);
+                    setProgressText(progressBarText, "Getting information...");
+                    json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/children");
+                    displayErrors(doc, context);
+                    setProgress(progressBar);
                     doc = Jsoup.parse(json);
-                    if (doc.getElementsByClass("alert-danger").size() > 0) {
-                        for (Element element : doc.getElementsByClass("alert-danger")) {
-                            error += element.select("div").text().substring(0, element.select("div").text().indexOf(".") + 1).toString() + "\n";
-                        }
-                        displayLong(error, context);
-                    } else {
-                        new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations");
-                        json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/children");
+                    for (int i = 0; i < doc.getElementsByClass("fa-child").size(); i++) {
+                        Child child = new Child();
+                        child.setID(doc.getElementsByClass("fa-child").get(i).parent().attr("href").substring(doc.getElementsByClass("fa-child").get(i).parent().attr("href").lastIndexOf("/") + 1,
+                                doc.getElementsByClass("fa-child").get(i).parent().attr("href").length()));
+                        child.setName(doc.getElementsByClass("fa-caret-down").get(i).parent().text());
+                        tapestrySession.addChildren(child);
+                    }
+                    for (Child child : tapestrySession.getChildren()) {
+                        new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/child/" + child.getID());
+                        displayErrors(doc, context);
+                        setProgress(progressBar);
+                        setProgressText(progressBarText, "Getting additional information...");
+                        json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations?children%5Bchild_id%5D=" + child.getID());
+                        displayErrors(doc, context);
+                        setProgress(progressBar);
+                        setProgressText(progressBarText, "Getting list of observations...");
                         doc = Jsoup.parse(json);
-                        for(int i = 0; i < doc.getElementsByClass("fa-child").size(); i++) {
-                            Child child = new Child();
-                            child.setID(doc.getElementsByClass("fa-child").get(i).parent().attr("href").substring(doc.getElementsByClass("fa-child").get(i).parent().attr("href").lastIndexOf("/") + 1,
-                                    doc.getElementsByClass("fa-child").get(i).parent().attr("href").length()));
-                            child.setName(doc.getElementsByClass("fa-caret-down").get(i).parent().text());
-                            tapestrySession.addChildren(child);
-                        }
-                        for(Child child : tapestrySession.getChildren()){
-                            new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/child/" + child.getID());
-                            json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations?children%5Bchild_id%5D=" + child.getID());
-                            doc = Jsoup.parse(json);
-                            for(int i = 0; i < doc.getElementsByClass("media-heading").size(); i++ ) {
-                                String url = doc.getElementsByClass("media-heading").get(i).child(0).attr("href");
-                                System.out.println(url);
-                                if(!urls.contains(url)) {
+                        for (int i = 0; i < doc.getElementsByClass("media-heading").size(); i++) {
+                            String url = doc.getElementsByClass("media-heading").get(i).child(0).attr("href");
+                            System.out.println(url);
+                            setProgressText(progressBarText, "Checking observations for dates ...");
+                            if (!urls.contains(url)) {
 
-                                    json = new Request().getJSONFromUrlUsingGet(url);
-                                    Document innerDoc = Jsoup.parse(json);
-                                    innerDoc.outputSettings(new Document.OutputSettings().prettyPrint(false));
-                                    List<CalenderEvent> calenderEvents = checkForCalendarEvents(innerDoc, url);
-                                    if (checkAndRequestPermissions(context)) {
-                                        for (CalenderEvent event : calenderEvents) {
-                                            addEventToCalendar(context, event.getContent(), event.getUrl(), event.getDatePlanned(), true, false);
-                                        }
-                                    }
-                                    urls.add(url);
-                                    try {
-                                        write(context, TAPESTRY_CHECKED, objectMapper.writeValueAsString(urls),TAPESTRY);
-                                    } catch (JsonProcessingException e) {
-                                        throw new RuntimeException(e);
+                                json = new Request().getJSONFromUrlUsingGet(url);
+                                displayErrors(doc, context);
+                                Document innerDoc = Jsoup.parse(json);
+                                innerDoc.outputSettings(new Document.OutputSettings().prettyPrint(false));
+                                List<CalenderEvent> calenderEvents = checkForCalendarEvents(innerDoc, url, child.getName());
+                                if (checkAndRequestPermissions(context)) {
+                                    for (CalenderEvent event : calenderEvents) {
+                                        addEventToCalendar(context, event, true, false);
                                     }
                                 }
+                                urls.add(url);
+                                try {
+                                    write(context, TAPESTRY_CHECKED, objectMapper.writeValueAsString(urls), TAPESTRY);
+                                } catch (JsonProcessingException e) {
+                                    throw new RuntimeException(e);
+                                }
                             }
-                            DisplayMessage.displayShort(doc.getElementsByClass("media-heading").size() + "/" + doc.getElementsByClass("media-heading").size() + " messages checked for " + child.getName(), context);
+                            setProgress(progressBar);
+                        }
+                        setProgress(progressBar);
+                    }
+                    setProgressText(progressBarText, "Finished ...");
+                }
+            }
+            setVisibility(progressBar, progressBarText, View.INVISIBLE);
+        }
+    };
+
+    public Runnable jobCheck = new Runnable() {
+        @Override
+        public void run() {
+            String json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/");
+
+            // get _token using jsoup
+            Document doc = Jsoup.parse(json);
+
+            String token = "";
+            for (Element element : doc.getElementsByTag("input")) {
+                if (element.attr("name").equals("_token")) {
+                    token = element.attr("value");
+                }
+            }
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String creds = read(context, TAPESTRY_CREDENTIALS, TAPESTRY);
+            String tapestryChecked = read(context, TAPESTRY_CHECKED, TAPESTRY);
+            TapestryLoginCredentials tapestryLoginCredentials = new TapestryLoginCredentials();
+            List<String> urls = new ArrayList<>();
+            try {
+                if (!creds.isEmpty()) {
+                    tapestryLoginCredentials = objectMapper.readValue(creds, TapestryLoginCredentials.class);
+                }
+                if (!tapestryChecked.isEmpty()) {
+                    urls = objectMapper.readValue(tapestryChecked, TypeFactory.defaultInstance().constructCollectionType(List.class, String.class));
+                }
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+            HashMap<String, String> params = new HashMap<>();
+            params.put("email", tapestryLoginCredentials.getUsername());
+            params.put("password", tapestryLoginCredentials.getPassword());
+            params.put("login_redirect_url", "");
+            params.put("login_redirect_school", "");
+            params.put("oauth", "");
+            params.put("oauth_login_url", "");
+            params.put("_token", token);
+            //login
+            json = new Request().getJSONFromUrlUsingPost(TAPESTRY_BASE_PATH + "/login", params);
+            doc = Jsoup.parse(json);
+            if (doc.getElementsByClass("alert-danger").size() > 0) {
+                return;
+            } else {
+                new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations");
+                json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/children");
+                doc = Jsoup.parse(json);
+                for (int i = 0; i < doc.getElementsByClass("fa-child").size(); i++) {
+                    Child child = new Child();
+                    child.setID(doc.getElementsByClass("fa-child").get(i).parent().attr("href").substring(doc.getElementsByClass("fa-child").get(i).parent().attr("href").lastIndexOf("/") + 1,
+                            doc.getElementsByClass("fa-child").get(i).parent().attr("href").length()));
+                    child.setName(doc.getElementsByClass("fa-caret-down").get(i).parent().text());
+                    tapestrySession.addChildren(child);
+                }
+                for (Child child : tapestrySession.getChildren()) {
+                    new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/child/" + child.getID());
+                    json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations?children%5Bchild_id%5D=" + child.getID());
+                    doc = Jsoup.parse(json);
+                    for (int i = 0; i < doc.getElementsByClass("media-heading").size(); i++) {
+                        String url = doc.getElementsByClass("media-heading").get(i).child(0).attr("href");
+                        if (!urls.contains(url)) {
+
+                            json = new Request().getJSONFromUrlUsingGet(url);
+                            Document innerDoc = Jsoup.parse(json);
+                            innerDoc.outputSettings(new Document.OutputSettings().prettyPrint(false));
+                            List<CalenderEvent> calenderEvents = checkForCalendarEvents(innerDoc, url, child.getName());
+                            if (checkAndRequestPermissions(context)) {
+                                for (CalenderEvent event : calenderEvents) {
+                                    addEventToCalendar(context, event, true, false);
+                                }
+                            }
+                            urls.add(url);
+                            try {
+                                write(context, TAPESTRY_CHECKED, objectMapper.writeValueAsString(urls), TAPESTRY);
+                            } catch (JsonProcessingException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                 }
             }
-        });
+        }
+    };
+
+
+    private void displayErrors(Document doc, Context context) {
+        if (doc.getElementsByClass("alert-danger").size() > 0) {
+            for (Element element : doc.getElementsByClass("alert-danger")) {
+                error += element.select("div").text().substring(0, element.select("div").text().indexOf(".") + 1).toString() + "\n";
+            }
+            if (!error.replaceAll("\n", "").isEmpty()) {
+                displayLong(error, context);
+            }
+        }
     }
 
 
-    private List<CalenderEvent> checkForCalendarEvents(Document doc, String url) {
+    private List<CalenderEvent> checkForCalendarEvents(Document doc, String url, String childName) {
         List<CalenderEvent> calenderEvents = new ArrayList<>();
         String dateApproved = doc.getElementsByClass("js-obs-approved-metadata").text();
+        String whoApproved = dateApproved.substring(12, dateApproved.indexOf(" on "));
         LocalDateTime localDateApproved = LocalDateTime.parse(dateApproved.substring(dateApproved.length() - 20, dateApproved.length()), approvedDateFormat);
-        if(doc.getElementsByClass("page-note") == null || doc.getElementsByClass("page-note").isEmpty()){
+        if (doc.getElementsByClass("page-note") == null || doc.getElementsByClass("page-note").isEmpty()) {
             return new ArrayList<>();
         }
         String content = doc.getElementsByClass("page-note").get(0).child(0).wholeText();
@@ -177,16 +307,16 @@ public class LookForNewTapestryEventsBackgroundService {
             } else {
                 boolean endsWithNewLine = line.endsWith("\n");
                 boolean startsWithNewLine = line.startsWith("\n");
-                if(startsWithNewLine){
+                if (startsWithNewLine) {
                     paragraphs.add(paragraph);
                     paragraph = new Paragraph();
                 }
                 String[] innerLines = line.split("\n");
-                for(int i = 0; i < innerLines.length; i++) {
+                for (int i = 0; i < innerLines.length; i++) {
                     if (!innerLines[i].isEmpty()) {
                         paragraph.setText(paragraph.getText() + innerLines[i]);
                         paragraph.addLines(innerLines[i]);
-                        if(i != (-1 + innerLines.length) || endsWithNewLine) {
+                        if (i != (-1 + innerLines.length) || endsWithNewLine) {
                             paragraphs.add(paragraph);
                             paragraph = new Paragraph();
                         }
@@ -194,40 +324,80 @@ public class LookForNewTapestryEventsBackgroundService {
                 }
             }
         }
-        if(!paragraph.getText().isEmpty()) {
+        if (!paragraph.getText().isEmpty()) {
             paragraphs.add(paragraph);
         }
         for (Paragraph para : paragraphs) {
-            Matcher datePatternMatcher = datePattern.matcher(para.getText());
-            Matcher dayPatternMatcher = dayPattern.matcher(para.getText());
-            while (datePatternMatcher.find()) {
-                int start = datePatternMatcher.start(0);
-                int end = datePatternMatcher.end(0);
-                CalenderEvent calenderEvent = new CalenderEvent();
-                calenderEvent.setDateApproved(localDateApproved);
-                calenderEvent.setContent(para.getText());
-                calenderEvent.setUrl(url);
-                for (DateTimeFormatter dtf : new DateUtil().dateTimeFormatterList) {
-                    try {
-                        calenderEvent.setDatePlanned(LocalDate.parse(para.getText().substring(start, end), dtf));
-                        calenderEvents.add(calenderEvent);
-                    } catch (DateTimeParseException parseException) {
+            for (String line : para.getLines()) {
+                Matcher datePatternMatcher = datePattern.matcher(line);
+                Matcher dayPatternMatcher = dayPattern.matcher(line);
+                while (datePatternMatcher.find()) {
+                    int start = datePatternMatcher.start(0);
+                    int end = datePatternMatcher.end(0);
+                    CalenderEvent calenderEvent = new CalenderEvent();
+                    calenderEvent.setDateApproved(localDateApproved);
+                    calenderEvent.setContent(para.getText());
+                    calenderEvent.setTitle(line);
+                    calenderEvent.setChildName(childName);
+                    calenderEvent.setApprovedBy(whoApproved);
+                    calenderEvent.setUrl(url);
+                    for (DateTimeFormatter dtf : new DateUtil().dateTimeFormatterList) {
+                        try {
+                            calenderEvent.setDatePlanned(LocalDate.parse(line.substring(start, end), dtf));
+                            calenderEvents.add(calenderEvent);
+                        } catch (DateTimeParseException parseException) {
+                        }
                     }
                 }
-            }
-            while (dayPatternMatcher.find()) {
-                int start = dayPatternMatcher.start(0);
-                int end = dayPatternMatcher.end(0);
-                CalenderEvent calenderEvent = new CalenderEvent();
-                calenderEvent.setDateApproved(localDateApproved);
-                calenderEvent.setContent(para.getText());
-                calenderEvent.setUrl(url);
-                String result = para.getText().substring(start, end);
-                calenderEvent.setDatePlanned(localDateApproved.with(TemporalAdjusters.next(DayOfWeek.of(parseDayOfWeek(result.split(" ")[1].toUpperCase()) - 1))).toLocalDate());
-                calenderEvents.add(calenderEvent);
+                while (dayPatternMatcher.find()) {
+                    int start = dayPatternMatcher.start(0);
+                    int end = dayPatternMatcher.end(0);
+                    CalenderEvent calenderEvent = new CalenderEvent();
+                    calenderEvent.setDateApproved(localDateApproved);
+                    calenderEvent.setContent(para.getText());
+                    calenderEvent.setTitle(line);
+                    calenderEvent.setChildName(childName);
+                    calenderEvent.setApprovedBy(whoApproved);
+                    calenderEvent.setUrl(url);
+                    String result = line.substring(start, end);
+                    calenderEvent.setDatePlanned(localDateApproved.with(TemporalAdjusters.next(DayOfWeek.of(parseDayOfWeek(result.split(" ")[1].toUpperCase()) - 1))).toLocalDate());
+                    calenderEvents.add(calenderEvent);
+                }
             }
         }
         return calenderEvents;
+    }
+
+    private void setVisibility(ProgressBar progressBar, TextView progressBarText, int visibility) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                progressBar.setVisibility(visibility);
+                progressBarText.setVisibility(visibility);
+            }
+        });
+    }
+
+    private void setProgress(ProgressBar progressBar) {
+        progress++;
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                progressBar.setProgress(progress);
+            }
+        });
+    }
+
+    private void setProgressText(TextView progressBarText, String text) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                progressBarText.setText(text);
+            }
+        });
     }
 
     private static int parseDayOfWeek(String day) {
