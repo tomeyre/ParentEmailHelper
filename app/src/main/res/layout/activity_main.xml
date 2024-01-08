@@ -26,7 +26,7 @@
         android:layout_marginTop="50dp"
         android:paddingLeft="20dp"
         android:paddingRight="20dp"
-        android:text="This application is designed to help you manage the insane amount of information a school will throw at you from 2 different sources.\n\nPlease click which type of account you want to link first."
+        android:text="This application is designed to remind you of upcoming events.\n\nPlease click which type of account you want to link first.\n(Tapestry is available now, Parent Mail will be coming later)\n\nPlease note the first time you check for new events the last 20 observations are checked, so new events found may be from the previous year!"
         android:textAlignment="center"
         android:textColor="@color/black"
         android:textSize="12sp"

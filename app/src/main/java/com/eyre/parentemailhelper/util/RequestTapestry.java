@@ -18,7 +18,7 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Request {
+public class RequestTapestry {
     // the below line is for making debugging easier
     final String TAG = "JsonParser.java";
     // where the returned json data from service will be stored when downloaded

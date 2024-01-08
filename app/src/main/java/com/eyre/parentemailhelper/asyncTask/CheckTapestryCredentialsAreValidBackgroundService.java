@@ -1,17 +1,16 @@
 package com.eyre.parentemailhelper.asyncTask;
 
-import static com.eyre.parentemailhelper.util.CommonConstants.TAPESTRY;
 import static com.eyre.parentemailhelper.util.CommonConstants.TAPESTRY_BASE_PATH;
-import static com.eyre.parentemailhelper.util.CommonConstants.TAPESTRY_CREDENTIALS;
 import static com.eyre.parentemailhelper.util.DisplayMessage.displayLong;
-import static com.eyre.parentemailhelper.util.InternalStorage.write;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+
+import androidx.security.crypto.EncryptedSharedPreferences;
+import androidx.security.crypto.MasterKey;
 
 import com.eyre.parentemailhelper.activity.CredentialsCheckingActivity;
-import com.eyre.parentemailhelper.pojo.TapestryLoginCredentials;
-import com.eyre.parentemailhelper.util.Request;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.eyre.parentemailhelper.util.RequestTapestry;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -27,13 +26,13 @@ public class CheckTapestryCredentialsAreValidBackgroundService {
 
     private String error = "";
 
-    public void check(String username, String password, Context context) {
+    public void check(Context context) {
 
         executor.execute(new Runnable() {
              @Override
              public void run() {
                  //get initial cookie
-                 String json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/");
+                 String json = new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/");
 
                  // get _token using jsoup
                  Document doc = Jsoup.parse(json);
@@ -46,19 +45,16 @@ public class CheckTapestryCredentialsAreValidBackgroundService {
                  }
 
                  HashMap<String, String> params = new HashMap<>();
-                 TapestryLoginCredentials tapestryLoginCredentials = new TapestryLoginCredentials();
-                 tapestryLoginCredentials.setUsername(username);
-                 tapestryLoginCredentials.setPassword(password);
-                 params.put("email",username);
-                 params.put("password",password);
+                 params.put("email", ((CredentialsCheckingActivity)context).getUsername());
+                 params.put("password", ((CredentialsCheckingActivity)context).getPassword());
                  params.put("login_redirect_url","");
                  params.put("login_redirect_school","");
                  params.put("oauth","");
                  params.put("oauth_login_url","");
                  params.put("_token",token);
                  //login
-                 if(!username.isEmpty() && !password.isEmpty()) {
-                     json = new Request().getJSONFromUrlUsingPost(TAPESTRY_BASE_PATH + "/login", params);
+                 if(!params.get("email").isEmpty() && !params.get("password").isEmpty()) {
+                     json = new RequestTapestry().getJSONFromUrlUsingPost(TAPESTRY_BASE_PATH + "/login", params);
                      doc = Jsoup.parse(json);
                      if(doc.getElementsByClass("alert-danger").size() > 0){
                          for(Element element : doc.getElementsByClass("alert-danger")) {
@@ -67,8 +63,7 @@ public class CheckTapestryCredentialsAreValidBackgroundService {
                          displayLong(error, context);
                      } else {
                          try {
-                             ObjectMapper objectMapper = new ObjectMapper();
-                             write(context, TAPESTRY_CREDENTIALS, objectMapper.writeValueAsString(tapestryLoginCredentials), TAPESTRY);
+                             generateAndStoreSymmetricKey(context);
                              displayLong("Logged in successfully", context);
                              ((CredentialsCheckingActivity)context).finish();
                          }catch (Exception e){
@@ -78,5 +73,31 @@ public class CheckTapestryCredentialsAreValidBackgroundService {
                  }
              }
          });
+    }
+
+    private static void generateAndStoreSymmetricKey(Context context) {
+        try {
+            // Generate a master key for encrypting SharedPreferences
+            MasterKey masterKey = new MasterKey.Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build();
+
+            // Create an instance of EncryptedSharedPreferences
+            SharedPreferences sharedPreferences = EncryptedSharedPreferences.create(
+                    context,
+                    "tappas",
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+
+            // Store the encrypted key in the SharedPreferences
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString("tapun", ((CredentialsCheckingActivity)context).getUsername());
+            editor.putString("tappd", ((CredentialsCheckingActivity)context).getPassword());
+            editor.apply();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -1,14 +1,16 @@
 package com.eyre.parentemailhelper.activity;
 
-import static com.eyre.parentemailhelper.util.CommonConstants.TAPESTRY;
-import static com.eyre.parentemailhelper.util.CommonConstants.TAPESTRY_CREDENTIALS;
-import static com.eyre.parentemailhelper.util.InternalStorage.read;
+import static com.eyre.parentemailhelper.util.KeyStoreHelper.retrieveUsername;
 
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.ValueCallback;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -16,14 +18,26 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.eyre.parentemailhelper.R;
+import com.eyre.parentemailhelper.listener.CheckCredentialsTapestryListener;
 import com.eyre.parentemailhelper.listener.TapestryDeleteCalendarListener;
 import com.eyre.parentemailhelper.listener.TapestryEventsListener;
-import com.eyre.parentemailhelper.listener.CheckCredentialsTapestryListener;
+import com.eyre.parentemailhelper.pojo.ParentMailSession;
 import com.eyre.parentemailhelper.schedule.CheckNewEmailsJob;
+import com.eyre.parentemailhelper.util.RequestParentMail;
+import com.eyre.parentemailhelper.util.RequestTapestry;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
+    ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private static final int DOWNLOAD_JOB_KEY = 101;
+    boolean loadingFinished = true;
+    boolean redirect = false;
 
     private Button provideLoginCredentials;
     private Button checkTapestryForNewEvents;
@@ -55,29 +69,28 @@ public class MainActivity extends AppCompatActivity {
         checkTapestryForNewEvents.setOnClickListener(tapestryEventsListener);
         deleteTapestryCalendar.setOnClickListener(tapestryDeleteCalendarListener);
 
-//        initJob();
+        initJob();
     }
 
-    private void initJob(){
+    private void initJob() {
         ComponentName componentName = new ComponentName(this, CheckNewEmailsJob.class);
         JobInfo.Builder builder = new JobInfo.Builder(DOWNLOAD_JOB_KEY, componentName)
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setPersisted(true);
-        builder.setPeriodic(18*60*60*1000, 24*60*60*1000);
+        builder.setPeriodic(18 * 60 * 60 * 1000, 24 * 60 * 60 * 1000);
 
-        JobScheduler checkNewEmailsJob = (JobScheduler)  getSystemService(JOB_SCHEDULER_SERVICE);
+        JobScheduler checkNewEmailsJob = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
         checkNewEmailsJob.schedule(builder.build());
-     }
+    }
 
     @Override
     protected void onResume() {
         super.onResume();
-        String creds = read(this, TAPESTRY_CREDENTIALS, TAPESTRY);
-        if (!creds.isEmpty()) {
+
+        if (retrieveUsername(this) != null && !retrieveUsername(this).isEmpty()) {
             provideLoginCredentials.setText("Change Tapestry Login Details");
             checkTapestryForNewEvents.setVisibility(View.VISIBLE);
             deleteTapestryCalendar.setVisibility(View.VISIBLE);
         }
     }
-
 }

@@ -11,6 +11,8 @@ import static com.eyre.parentemailhelper.util.DateUtil.dayPattern;
 import static com.eyre.parentemailhelper.util.DisplayMessage.displayLong;
 import static com.eyre.parentemailhelper.util.InternalStorage.read;
 import static com.eyre.parentemailhelper.util.InternalStorage.write;
+import static com.eyre.parentemailhelper.util.KeyStoreHelper.retrievePassword;
+import static com.eyre.parentemailhelper.util.KeyStoreHelper.retrieveUsername;
 import static com.eyre.parentemailhelper.util.Permissions.checkAndRequestPermissions;
 
 import android.content.Context;
@@ -19,7 +21,6 @@ import android.os.Looper;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.eyre.parentemailhelper.pojo.CalenderEvent;
 import com.eyre.parentemailhelper.pojo.Child;
@@ -27,12 +28,9 @@ import com.eyre.parentemailhelper.pojo.Paragraph;
 import com.eyre.parentemailhelper.pojo.TapestryLoginCredentials;
 import com.eyre.parentemailhelper.pojo.TapestrySession;
 import com.eyre.parentemailhelper.util.DateUtil;
-import com.eyre.parentemailhelper.util.DisplayMessage;
-import com.eyre.parentemailhelper.util.Request;
+import com.eyre.parentemailhelper.util.RequestTapestry;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.ArrayType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import org.jsoup.Jsoup;
@@ -56,8 +54,6 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
-
-import kotlin.jvm.internal.TypeReference;
 
 public class LookForNewTapestryEventsBackgroundService {
 
@@ -84,9 +80,10 @@ public class LookForNewTapestryEventsBackgroundService {
         @Override
         public void run() {
             setVisibility(progressBar, progressBarText, View.VISIBLE);
+            int count = 0;
             if (tapestrySession.getCookie() == null) {
                 //get initial cookie
-                String json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/");
+                String json = new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/");
                 setProgress(progressBar);
                 setProgressText(progressBarText, "Logging in...");
 
@@ -101,14 +98,9 @@ public class LookForNewTapestryEventsBackgroundService {
                 }
 
                 ObjectMapper objectMapper = new ObjectMapper();
-                String creds = read(context, TAPESTRY_CREDENTIALS, TAPESTRY);
                 String tapestryChecked = read(context, TAPESTRY_CHECKED, TAPESTRY);
-                TapestryLoginCredentials tapestryLoginCredentials = new TapestryLoginCredentials();
                 List<String> urls = new ArrayList<>();
                 try {
-                    if (!creds.isEmpty()) {
-                        tapestryLoginCredentials = objectMapper.readValue(creds, TapestryLoginCredentials.class);
-                    }
                     if (!tapestryChecked.isEmpty()) {
                         urls = objectMapper.readValue(tapestryChecked, TypeFactory.defaultInstance().constructCollectionType(List.class, String.class));
                     }
@@ -116,24 +108,25 @@ public class LookForNewTapestryEventsBackgroundService {
                     throw new RuntimeException(e);
                 }
                 HashMap<String, String> params = new HashMap<>();
-                params.put("email", tapestryLoginCredentials.getUsername());
-                params.put("password", tapestryLoginCredentials.getPassword());
+                params.put("email", retrieveUsername(context));
+                params.put("password", retrievePassword(context));
                 params.put("login_redirect_url", "");
                 params.put("login_redirect_school", "");
                 params.put("oauth", "");
                 params.put("oauth_login_url", "");
                 params.put("_token", token);
                 //login
-                json = new Request().getJSONFromUrlUsingPost(TAPESTRY_BASE_PATH + "/login", params);
+                json = new RequestTapestry().getJSONFromUrlUsingPost(TAPESTRY_BASE_PATH + "/login", params);
                 doc = Jsoup.parse(json);
+
                 if (doc.getElementsByClass("alert-danger").size() > 0) {
                     displayErrors(doc, context);
                 } else {
-                    new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations");
+                    new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations");
                     displayErrors(doc, context);
                     setProgress(progressBar);
                     setProgressText(progressBarText, "Getting information...");
-                    json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/children");
+                    json = new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/children");
                     displayErrors(doc, context);
                     setProgress(progressBar);
                     doc = Jsoup.parse(json);
@@ -145,11 +138,11 @@ public class LookForNewTapestryEventsBackgroundService {
                         tapestrySession.addChildren(child);
                     }
                     for (Child child : tapestrySession.getChildren()) {
-                        new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/child/" + child.getID());
+                        new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/child/" + child.getID());
                         displayErrors(doc, context);
                         setProgress(progressBar);
                         setProgressText(progressBarText, "Getting additional information...");
-                        json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations?children%5Bchild_id%5D=" + child.getID());
+                        json = new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations?children%5Bchild_id%5D=" + child.getID());
                         displayErrors(doc, context);
                         setProgress(progressBar);
                         setProgressText(progressBarText, "Getting list of observations...");
@@ -160,13 +153,14 @@ public class LookForNewTapestryEventsBackgroundService {
                             setProgressText(progressBarText, "Checking observations for dates ...");
                             if (!urls.contains(url)) {
 
-                                json = new Request().getJSONFromUrlUsingGet(url);
+                                json = new RequestTapestry().getJSONFromUrlUsingGet(url);
                                 displayErrors(doc, context);
                                 Document innerDoc = Jsoup.parse(json);
                                 innerDoc.outputSettings(new Document.OutputSettings().prettyPrint(false));
                                 List<CalenderEvent> calenderEvents = checkForCalendarEvents(innerDoc, url, child.getName());
                                 if (checkAndRequestPermissions(context)) {
                                     for (CalenderEvent event : calenderEvents) {
+                                        count++;
                                         addEventToCalendar(context, event, true, false);
                                     }
                                 }
@@ -184,6 +178,7 @@ public class LookForNewTapestryEventsBackgroundService {
                     setProgressText(progressBarText, "Finished ...");
                 }
             }
+            displayLong("Found: " + count + " new events", context);
             setVisibility(progressBar, progressBarText, View.INVISIBLE);
         }
     };
@@ -191,7 +186,7 @@ public class LookForNewTapestryEventsBackgroundService {
     public Runnable jobCheck = new Runnable() {
         @Override
         public void run() {
-            String json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/");
+            String json = new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/");
 
             // get _token using jsoup
             Document doc = Jsoup.parse(json);
@@ -227,13 +222,13 @@ public class LookForNewTapestryEventsBackgroundService {
             params.put("oauth_login_url", "");
             params.put("_token", token);
             //login
-            json = new Request().getJSONFromUrlUsingPost(TAPESTRY_BASE_PATH + "/login", params);
+            json = new RequestTapestry().getJSONFromUrlUsingPost(TAPESTRY_BASE_PATH + "/login", params);
             doc = Jsoup.parse(json);
             if (doc.getElementsByClass("alert-danger").size() > 0) {
                 return;
             } else {
-                new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations");
-                json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/children");
+                new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations");
+                json = new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/children");
                 doc = Jsoup.parse(json);
                 for (int i = 0; i < doc.getElementsByClass("fa-child").size(); i++) {
                     Child child = new Child();
@@ -243,14 +238,14 @@ public class LookForNewTapestryEventsBackgroundService {
                     tapestrySession.addChildren(child);
                 }
                 for (Child child : tapestrySession.getChildren()) {
-                    new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/child/" + child.getID());
-                    json = new Request().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations?children%5Bchild_id%5D=" + child.getID());
+                    new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/child/" + child.getID());
+                    json = new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations?children%5Bchild_id%5D=" + child.getID());
                     doc = Jsoup.parse(json);
                     for (int i = 0; i < doc.getElementsByClass("media-heading").size(); i++) {
                         String url = doc.getElementsByClass("media-heading").get(i).child(0).attr("href");
                         if (!urls.contains(url)) {
 
-                            json = new Request().getJSONFromUrlUsingGet(url);
+                            json = new RequestTapestry().getJSONFromUrlUsingGet(url);
                             Document innerDoc = Jsoup.parse(json);
                             innerDoc.outputSettings(new Document.OutputSettings().prettyPrint(false));
                             List<CalenderEvent> calenderEvents = checkForCalendarEvents(innerDoc, url, child.getName());
