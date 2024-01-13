@@ -35,7 +35,7 @@
         app:layout_constraintTop_toBottomOf="@id/title" />
 
     <Button
-        android:id="@+id/provideLoginCredentials"
+        android:id="@+id/provideLoginCredentialsTapestry"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Tapestry"
@@ -51,33 +51,56 @@
         android:layout_height="wrap_content"
         android:text="Check Tapestry Events"
         android:textColor="@color/white"
-        android:visibility="invisible"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/provideLoginCredentials" />
+        app:layout_constraintTop_toBottomOf="@+id/provideLoginCredentialsTapestry" />
 
     <Button
-        android:id="@+id/deleteTapestryCalendar"
+        android:id="@+id/provideLoginCredentialsParentMail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Delete Tapestry Calendar"
+        android:text="Parent Mail"
         android:textColor="@color/white"
-        android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/checkTapestryForNewEvents" />
+
+    <Button
+        android:id="@+id/checkParentMailForNewEvents"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Check Parent Mail Events"
+        android:textColor="@color/white"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/provideLoginCredentialsParentMail" />
+
+    <Button
+        android:id="@+id/deleteCalendar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delete Calendar"
+        android:textColor="@color/white"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/checkParentMailForNewEvents" />
 
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="10dp"
-        android:layout_margin="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="20dp"
         android:max="50"
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/deleteTapestryCalendar" />
+        app:layout_constraintTop_toBottomOf="@+id/deleteCalendar" />
 
     <TextView
         android:id="@+id/progressBarText"
@@ -93,5 +116,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/progressBar" />
+
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="0dp"
+        android:layout_height="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:visibility="invisible"
+        app:layout_constraintStart_toStartOf="@+id/progressBarText"
+        app:layout_constraintEnd_toEndOf="@+id/progressBarText"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

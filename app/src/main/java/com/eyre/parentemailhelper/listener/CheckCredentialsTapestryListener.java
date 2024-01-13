@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.view.View;
 
-import com.eyre.parentemailhelper.activity.CredentialsCheckingActivity;
+import com.eyre.parentemailhelper.activity.TapestryCredentialsCheckingActivity;
 
 public class CheckCredentialsTapestryListener implements View.OnClickListener {
 
@@ -16,7 +16,7 @@ public class CheckCredentialsTapestryListener implements View.OnClickListener {
 
     @Override
     public void onClick(View arg0) {
-        Intent myIntent = new Intent(context, CredentialsCheckingActivity.class);
+        Intent myIntent = new Intent(context, TapestryCredentialsCheckingActivity.class);
         context.startActivity(myIntent);
 
     }

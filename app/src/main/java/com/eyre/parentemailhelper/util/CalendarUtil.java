@@ -1,24 +1,18 @@
 package com.eyre.parentemailhelper.util;
 
 import static android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL;
-
 import static com.eyre.parentemailhelper.util.CommonConstants.TAPESTRY;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.SyncAdapterType;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.provider.CalendarContract;
 
-import androidx.annotation.ColorInt;
-
 import com.eyre.parentemailhelper.pojo.CalenderEvent;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TimeZone;
 

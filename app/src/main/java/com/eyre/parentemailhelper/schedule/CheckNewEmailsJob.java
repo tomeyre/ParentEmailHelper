@@ -1,30 +1,39 @@
 package com.eyre.parentemailhelper.schedule;
 
-import android.app.job.JobParameters;
-import android.app.job.JobService;
+import android.app.IntentService;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
+
+import androidx.annotation.Nullable;
 
 import com.eyre.parentemailhelper.asyncTask.LookForNewTapestryEventsBackgroundService;
 
-public class CheckNewEmailsJob extends JobService {
+public class CheckNewEmailsJob extends IntentService {
+    private static final String TAG = CheckNewEmailsJob.class.getSimpleName();
+
+    LookForNewTapestryEventsBackgroundService lookForNewTapestryEventsBackgroundService;
 
     private Context context;
-    private LookForNewTapestryEventsBackgroundService lookForNewTapestryEventsBackgroundService;
 
-    public CheckNewEmailsJob(){}
+    public PendingIntent getReminderPendingIntent() {
+        Intent action = new Intent(context, CheckNewEmailsJob.class);
+        return PendingIntent.getService(context, 0, action, PendingIntent.FLAG_UPDATE_CURRENT);
+    }
 
-    public CheckNewEmailsJob(Context context){
+    public CheckNewEmailsJob() {
+        super(TAG);
+    }
+
+    public CheckNewEmailsJob(Context context) {
+        super(TAG);
         this.context = context;
     }
+
     @Override
-    public boolean onStartJob(JobParameters jobParameters) {
+    protected void onHandleIntent(@Nullable Intent intent) {
         lookForNewTapestryEventsBackgroundService = new LookForNewTapestryEventsBackgroundService();
+        lookForNewTapestryEventsBackgroundService.getNewTapestryEvents(context);
 
-        return true;
-    }
-
-    @Override
-    public boolean onStopJob(JobParameters jobParameters) {
-        return false;
     }
 }

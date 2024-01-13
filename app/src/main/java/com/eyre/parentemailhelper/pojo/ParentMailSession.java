@@ -1,47 +1,34 @@
 package com.eyre.parentemailhelper.pojo;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 public class ParentMailSession {
 
-    private static ParentMailSession INSTANCE;
-    private ParentMailSession() {
-    }
-
-    public static ParentMailSession getInstance() {
-        if(INSTANCE == null) {
-            INSTANCE = new ParentMailSession();
+    private static ParentMailSession parentMailSession;
+    public static ParentMailSession getSession(){
+        if(parentMailSession == null){
+            parentMailSession = new ParentMailSession();
         }
-
-        return INSTANCE;
+        return parentMailSession;
     }
 
-    private String cookie;
-    private String referer;
-    private List<Child> children = new ArrayList<>();
+    private Map<String, String> currentHeaders;
 
-    public String getCookie() {
-        return cookie;
+    private String cookies;
+
+    public String getCookies() {
+        return cookies;
     }
 
-    public void setCookie(String cookie) {
-        this.cookie = cookie;
+    public void setCookies(String cookies) {
+        this.cookies = cookies;
     }
 
-    public String getReferer() {
-        return referer;
+    public Map<String, String> getCurrentHeaders() {
+        return currentHeaders;
     }
 
-    public void setReferer(String referer) {
-        this.referer = referer;
-    }
-
-    public List<Child> getChildren() {
-        return children;
-    }
-
-    public void addChildren(Child child) {
-        children.add(child);
+    public void setCurrentHeaders(Map<String, String> currentHeaders) {
+        this.currentHeaders = currentHeaders;
     }
 }

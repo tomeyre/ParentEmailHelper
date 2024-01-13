@@ -28,7 +28,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activity.CredentialsCheckingActivity"/>
+        <activity android:name=".activity.TapestryCredentialsCheckingActivity"/>
+        <activity android:name=".activity.ParentMailCredentialsCheckingActivity"/>
         <service android:name=".schedule.CheckNewEmailsJob"
             android:permission="android.permission.BIND_JOB_SERVICE"/>
     </application>

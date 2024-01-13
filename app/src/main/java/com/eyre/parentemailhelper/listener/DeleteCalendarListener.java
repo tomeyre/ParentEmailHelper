@@ -10,11 +10,11 @@ import android.view.View;
 
 import java.io.File;
 
-public class TapestryDeleteCalendarListener implements View.OnClickListener {
+public class DeleteCalendarListener implements View.OnClickListener {
 
     private Context context;
 
-    public TapestryDeleteCalendarListener(Context context){
+    public DeleteCalendarListener(Context context){
         this.context = context;
     }
 

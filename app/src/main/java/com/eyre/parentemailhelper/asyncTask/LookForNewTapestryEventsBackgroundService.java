@@ -76,16 +76,25 @@ public class LookForNewTapestryEventsBackgroundService {
         executor.execute(fullCheck);
     }
 
+    public void getNewTapestryEvents(Context context) {
+        this.context = context;
+        executor.execute(fullCheck);
+    }
+
     private Runnable fullCheck = new Runnable() {
         @Override
         public void run() {
-            setVisibility(progressBar, progressBarText, View.VISIBLE);
+            if(progressBar != null) {
+                setVisibility(progressBar, progressBarText, View.VISIBLE);
+            }
             int count = 0;
             if (tapestrySession.getCookie() == null) {
                 //get initial cookie
                 String json = new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/");
-                setProgress(progressBar);
-                setProgressText(progressBarText, "Logging in...");
+                if(progressBar != null) {
+                    setProgress(progressBar);
+                    setProgressText(progressBarText, "Logging in...");
+                }
 
                 // get _token using jsoup
                 Document doc = Jsoup.parse(json);
@@ -124,11 +133,15 @@ public class LookForNewTapestryEventsBackgroundService {
                 } else {
                     new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations");
                     displayErrors(doc, context);
-                    setProgress(progressBar);
-                    setProgressText(progressBarText, "Getting information...");
+                    if(progressBar != null) {
+                        setProgress(progressBar);
+                        setProgressText(progressBarText, "Getting information...");
+                    }
                     json = new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/children");
                     displayErrors(doc, context);
-                    setProgress(progressBar);
+                    if(progressBar != null) {
+                        setProgress(progressBar);
+                    }
                     doc = Jsoup.parse(json);
                     for (int i = 0; i < doc.getElementsByClass("fa-child").size(); i++) {
                         Child child = new Child();
@@ -140,17 +153,23 @@ public class LookForNewTapestryEventsBackgroundService {
                     for (Child child : tapestrySession.getChildren()) {
                         new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/child/" + child.getID());
                         displayErrors(doc, context);
-                        setProgress(progressBar);
-                        setProgressText(progressBarText, "Getting additional information...");
+                        if(progressBar != null) {
+                            setProgress(progressBar);
+                            setProgressText(progressBarText, "Getting additional information...");
+                        }
                         json = new RequestTapestry().getJSONFromUrlUsingGet(TAPESTRY_BASE_PATH + "/s/nettleham-infant-and-nursery-school/observations?children%5Bchild_id%5D=" + child.getID());
                         displayErrors(doc, context);
-                        setProgress(progressBar);
-                        setProgressText(progressBarText, "Getting list of observations...");
+                        if(progressBar != null) {
+                            setProgress(progressBar);
+                            setProgressText(progressBarText, "Getting list of observations...");
+                        }
                         doc = Jsoup.parse(json);
                         for (int i = 0; i < doc.getElementsByClass("media-heading").size(); i++) {
                             String url = doc.getElementsByClass("media-heading").get(i).child(0).attr("href");
                             System.out.println(url);
-                            setProgressText(progressBarText, "Checking observations for dates ...");
+                            if(progressBar != null) {
+                                setProgressText(progressBarText, "Checking observations for dates ...");
+                            }
                             if (!urls.contains(url)) {
 
                                 json = new RequestTapestry().getJSONFromUrlUsingGet(url);
@@ -171,15 +190,23 @@ public class LookForNewTapestryEventsBackgroundService {
                                     throw new RuntimeException(e);
                                 }
                             }
+                            if(progressBar != null) {
+                                setProgress(progressBar);
+                            }
+                        }
+                        if(progressBar != null) {
                             setProgress(progressBar);
                         }
-                        setProgress(progressBar);
                     }
-                    setProgressText(progressBarText, "Finished ...");
+                    if(progressBar != null) {
+                        setProgressText(progressBarText, "Finished ...");
+                    }
                 }
             }
             displayLong("Found: " + count + " new events", context);
-            setVisibility(progressBar, progressBarText, View.INVISIBLE);
+            if(progressBar != null) {
+                setVisibility(progressBar, progressBarText, View.INVISIBLE);
+            }
         }
     };
 

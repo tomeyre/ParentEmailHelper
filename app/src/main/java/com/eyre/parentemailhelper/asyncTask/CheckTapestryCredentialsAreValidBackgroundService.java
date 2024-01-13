@@ -9,7 +9,7 @@ import android.content.SharedPreferences;
 import androidx.security.crypto.EncryptedSharedPreferences;
 import androidx.security.crypto.MasterKey;
 
-import com.eyre.parentemailhelper.activity.CredentialsCheckingActivity;
+import com.eyre.parentemailhelper.activity.TapestryCredentialsCheckingActivity;
 import com.eyre.parentemailhelper.util.RequestTapestry;
 
 import org.jsoup.Jsoup;
@@ -45,8 +45,8 @@ public class CheckTapestryCredentialsAreValidBackgroundService {
                  }
 
                  HashMap<String, String> params = new HashMap<>();
-                 params.put("email", ((CredentialsCheckingActivity)context).getUsername());
-                 params.put("password", ((CredentialsCheckingActivity)context).getPassword());
+                 params.put("email", ((TapestryCredentialsCheckingActivity)context).getTapestryUsername());
+                 params.put("password", ((TapestryCredentialsCheckingActivity)context).getTapestryPassword());
                  params.put("login_redirect_url","");
                  params.put("login_redirect_school","");
                  params.put("oauth","");
@@ -65,7 +65,7 @@ public class CheckTapestryCredentialsAreValidBackgroundService {
                          try {
                              generateAndStoreSymmetricKey(context);
                              displayLong("Logged in successfully", context);
-                             ((CredentialsCheckingActivity)context).finish();
+                             ((TapestryCredentialsCheckingActivity)context).finish();
                          }catch (Exception e){
                              e.printStackTrace();
                          }
@@ -93,8 +93,8 @@ public class CheckTapestryCredentialsAreValidBackgroundService {
 
             // Store the encrypted key in the SharedPreferences
             SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString("tapun", ((CredentialsCheckingActivity)context).getUsername());
-            editor.putString("tappd", ((CredentialsCheckingActivity)context).getPassword());
+            editor.putString("tapun", ((TapestryCredentialsCheckingActivity)context).getTapestryUsername());
+            editor.putString("tappd", ((TapestryCredentialsCheckingActivity)context).getTapestryPassword());
             editor.apply();
         } catch (Exception e) {
             e.printStackTrace();
